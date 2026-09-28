@@ -3,16 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>0.8倍電卓</title>
 
 <style>
+
 * {
     box-sizing: border-box;
 }
 
 body {
     margin: 0;
-    padding: 30px 15px;
+    padding: 25px 15px;
     font-family: sans-serif;
     background: #f4f6f8;
     color: #222;
@@ -29,28 +31,54 @@ body {
 
 h1 {
     text-align: center;
-    margin-top: 0;
+    margin: 0 0 25px;
 }
 
-label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: bold;
-}
 
-input {
+/* 入力 */
+
+#expression {
     width: 100%;
     padding: 15px;
-    font-size: 28px;
+    font-size: 26px;
     text-align: right;
     border: 2px solid #ddd;
     border-radius: 10px;
     outline: none;
 }
 
-input:focus {
+#expression:focus {
     border-color: #555;
 }
+
+
+/* ボタン */
+
+.calculate {
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: #333;
+    color: white;
+    font-size: 19px;
+    cursor: pointer;
+}
+
+.clear {
+    width: 100%;
+    margin-top: 8px;
+    padding: 11px;
+    border: none;
+    border-radius: 10px;
+    background: #ddd;
+    font-size: 17px;
+    cursor: pointer;
+}
+
+
+/* 結果 */
 
 .result {
     margin-top: 25px;
@@ -67,24 +95,13 @@ input:focus {
 
 #result {
     margin-top: 5px;
-    font-size: 42px;
+    font-size: 40px;
     font-weight: bold;
     word-break: break-all;
 }
 
-button {
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-}
 
-.clear {
-    width: 100%;
-    margin-top: 15px;
-    padding: 13px;
-    font-size: 18px;
-    background: #ddd;
-}
+/* 履歴 */
 
 .history {
     margin-top: 30px;
@@ -103,39 +120,42 @@ button {
 
 .delete-all {
     padding: 7px 10px;
+    border: none;
+    border-radius: 8px;
     background: #ddd;
-    font-size: 13px;
-}
-
-#historyList {
-    margin-top: 12px;
+    cursor: pointer;
 }
 
 .history-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 5px;
-    border-bottom: 1px solid #ddd;
+    margin-top: 10px;
+    padding: 13px;
+    background: #f4f4f4;
+    border-radius: 10px;
 }
 
 .calculation {
-    font-size: 18px;
+    font-size: 17px;
+    word-break: break-all;
 }
 
 .delete-item {
-    padding: 5px 9px;
-    background: #eee;
-    font-size: 14px;
+    margin-top: 8px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 6px;
+    background: #ddd;
+    cursor: pointer;
 }
 
 .empty-history {
     text-align: center;
     color: #888;
-    padding: 20px 0;
+    padding: 20px;
 }
+
 </style>
 </head>
+
 
 <body>
 
@@ -143,34 +163,68 @@ button {
 
     <h1>0.8倍電卓</h1>
 
-    <label for="number">数値</label>
+
+    <!-- 計算式入力 -->
 
     <input
-        id="number"
-        type="number"
+        id="expression"
+        type="text"
         inputmode="decimal"
-        step="any"
-        placeholder="数値を入力"
+        placeholder="例：22.5-10"
         autocomplete="off"
     >
 
-    <div class="result">
-        <div class="result-title">計算結果</div>
-        <div id="result">—</div>
-    </div>
 
-    <button class="clear" id="clear">
+    <!-- 計算 -->
+
+    <button
+        class="calculate"
+        onclick="calculate()"
+    >
+        計算
+    </button>
+
+
+    <!-- クリア -->
+
+    <button
+        class="clear"
+        onclick="clearInput()"
+    >
         クリア
     </button>
+
+
+    <!-- 結果 -->
+
+    <div class="result">
+
+        <div class="result-title">
+            0.8倍した結果
+        </div>
+
+        <div id="result">
+            —
+        </div>
+
+    </div>
+
+
+    <!-- 履歴 -->
 
     <div class="history">
 
         <div class="history-header">
+
             <h2>計算履歴</h2>
 
-            <button class="delete-all" id="deleteAll">
+            <button
+                class="delete-all"
+                onclick="deleteAllHistory()"
+            >
                 履歴を全消去
             </button>
+
         </div>
 
         <div id="historyList"></div>
@@ -179,21 +233,137 @@ button {
 
 </div>
 
+
 <script>
 
-const numberInput = document.getElementById("number");
-const result = document.getElementById("result");
-const clearButton = document.getElementById("clear");
-const historyList = document.getElementById("historyList");
-const deleteAllButton = document.getElementById("deleteAll");
+
+/* =========================
+   0.8倍固定
+========================= */
 
 const MULTIPLIER = 0.8;
 
+
+/* =========================
+   要素
+========================= */
+
+const expressionInput =
+    document.getElementById("expression");
+
+const result =
+    document.getElementById("result");
+
+const historyList =
+    document.getElementById("historyList");
+
+
+/* =========================
+   履歴読み込み
+========================= */
+
 let history =
-    JSON.parse(localStorage.getItem("calculatorHistory")) || [];
+    JSON.parse(
+        localStorage.getItem("calculatorHistory")
+    ) || [];
 
 
-// 数値を見やすく表示する
+/* =========================
+   計算
+========================= */
+
+function calculate() {
+
+    const expression =
+        expressionInput.value.trim();
+
+
+    if (expression === "") {
+        return;
+    }
+
+
+    try {
+
+        /*
+         * 使用可能な文字を制限
+         */
+
+        if (
+            !/^[0-9+\-*/().\s]+$/.test(expression)
+        ) {
+
+            throw new Error();
+
+        }
+
+
+        /*
+         * 計算式を計算
+         */
+
+        const calculation =
+            Function(
+                '"use strict"; return (' +
+                expression +
+                ')'
+            )();
+
+
+        if (
+            typeof calculation !== "number" ||
+            !Number.isFinite(calculation)
+        ) {
+
+            throw new Error();
+
+        }
+
+
+        /*
+         * 0.8倍
+         */
+
+        const answer =
+            calculation * MULTIPLIER;
+
+
+        const formattedAnswer =
+            formatNumber(answer);
+
+
+        /*
+         * 結果表示
+         */
+
+        result.textContent =
+            formattedAnswer;
+
+
+        /*
+         * 履歴追加
+         */
+
+        addHistory(
+            expression,
+            formattedAnswer
+        );
+
+
+    } catch {
+
+        result.textContent =
+            "計算できません";
+
+    }
+
+}
+
+
+/* =========================
+   数値の表示
+========================= */
+
 function formatNumber(number) {
 
     return Number(
@@ -203,46 +373,47 @@ function formatNumber(number) {
 }
 
 
-// 計算
-function calculate() {
+/* =========================
+   履歴追加
+========================= */
 
-    const input = numberInput.value;
-
-    if (input === "") {
-        result.textContent = "—";
-        return;
-    }
-
-    const number = Number(input);
-    const answer = number * MULTIPLIER;
-
-    const formattedAnswer = formatNumber(answer);
-
-    result.textContent = formattedAnswer;
-
-}
-
-
-// 履歴に追加
-function addHistory(input, answer) {
+function addHistory(
+    expression,
+    answer
+) {
 
     history.unshift({
-        input: input,
+
+        expression: expression,
+
         answer: answer
+
     });
 
-    // 履歴が増えすぎないように100件まで
+
+    /*
+     * 最大100件
+     */
+
     if (history.length > 100) {
-        history = history.slice(0, 100);
+
+        history =
+            history.slice(0, 100);
+
     }
 
+
     saveHistory();
+
     displayHistory();
 
 }
 
 
-// 履歴を保存
+/* =========================
+   履歴保存
+========================= */
+
 function saveHistory() {
 
     localStorage.setItem(
@@ -253,10 +424,14 @@ function saveHistory() {
 }
 
 
-// 履歴を表示
+/* =========================
+   履歴表示
+========================= */
+
 function displayHistory() {
 
     historyList.innerHTML = "";
+
 
     if (history.length === 0) {
 
@@ -264,107 +439,143 @@ function displayHistory() {
             '<div class="empty-history">履歴はありません</div>';
 
         return;
+
     }
 
-    history.forEach(function(item, index) {
 
-        const historyItem =
-            document.createElement("div");
+    history.forEach(
+        function(item, index) {
 
-        historyItem.className = "history-item";
+            const historyItem =
+                document.createElement("div");
 
-        const calculation =
-            document.createElement("span");
+            historyItem.className =
+                "history-item";
 
-        calculation.className = "calculation";
 
-        calculation.textContent =
-            item.input + " × 0.8 = " + item.answer;
+            const calculation =
+                document.createElement("div");
 
-        const deleteButton =
-            document.createElement("button");
+            calculation.className =
+                "calculation";
 
-        deleteButton.className = "delete-item";
-        deleteButton.textContent = "×";
 
-        deleteButton.addEventListener("click", function() {
+            calculation.textContent =
+                item.expression +
+                " × 0.8 = " +
+                item.answer;
 
-            history.splice(index, 1);
 
-            saveHistory();
-            displayHistory();
+            /*
+             * 個別削除
+             */
 
-        });
+            const deleteButton =
+                document.createElement("button");
 
-        historyItem.appendChild(calculation);
-        historyItem.appendChild(deleteButton);
+            deleteButton.className =
+                "delete-item";
 
-        historyList.appendChild(historyItem);
+            deleteButton.textContent =
+                "削除";
 
-    });
+
+            deleteButton.onclick =
+                function() {
+
+                    history.splice(index, 1);
+
+                    saveHistory();
+
+                    displayHistory();
+
+                };
+
+
+            historyItem.appendChild(
+                calculation
+            );
+
+            historyItem.appendChild(
+                deleteButton
+            );
+
+
+            historyList.appendChild(
+                historyItem
+            );
+
+        }
+    );
 
 }
 
 
-// 入力時に自動計算
-numberInput.addEventListener("input", calculate);
+/* =========================
+   履歴全消去
+========================= */
 
-
-// Enterキーで履歴に追加
-numberInput.addEventListener("keydown", function(event) {
-
-    if (event.key === "Enter") {
-
-        const input = numberInput.value;
-
-        if (input === "") {
-            return;
-        }
-
-        const number = Number(input);
-        const answer = number * MULTIPLIER;
-
-        addHistory(
-            input,
-            formatNumber(answer)
-        );
-
-    }
-
-});
-
-
-// クリア
-clearButton.addEventListener("click", function() {
-
-    numberInput.value = "";
-    result.textContent = "—";
-
-    numberInput.focus();
-
-});
-
-
-// 履歴を全消去
-deleteAllButton.addEventListener("click", function() {
+function deleteAllHistory() {
 
     if (history.length === 0) {
         return;
     }
 
-    if (confirm("計算履歴をすべて削除しますか？")) {
+
+    if (
+        confirm(
+            "計算履歴をすべて削除しますか？"
+        )
+    ) {
 
         history = [];
 
         saveHistory();
+
         displayHistory();
 
     }
 
-});
+}
 
 
-// 起動時に履歴を表示
+/* =========================
+   クリア
+========================= */
+
+function clearInput() {
+
+    expressionInput.value = "";
+
+    result.textContent = "—";
+
+    expressionInput.focus();
+
+}
+
+
+/* =========================
+   Enterで計算
+========================= */
+
+expressionInput.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (event.key === "Enter") {
+
+            calculate();
+
+        }
+
+    }
+);
+
+
+/* =========================
+   起動時に履歴表示
+========================= */
+
 displayHistory();
 
 </script>
